@@ -1,0 +1,118 @@
+name: Helm Deploy to EKS
+
+on:
+  workflow_dispatch:
+    inputs:
+      namespace:
+        description: 'Kubernetes namespace name'
+        required: true
+      application:
+        description: 'Application name (used for resource names and Helm release)'
+        required: true
+      repository:
+        description: 'Container image repository (e.g., ghcr.io/your-name/app)'
+        required: true
+      tag:
+        description: 'Image tag to deploy'
+        required: true
+      containerPort:
+        description: 'Container port'
+        required: true
+        default: '80'
+      domain:
+        description: 'Domain name for ingress'
+        required: true
+      ingressClass:
+        description: 'Ingress class name for internal app use `internal-nginx` and for external app `external-nginx`'
+        required: true
+      healthPath:
+        description: 'Health check path for readiness probe'
+        required: true
+        default: '/healthz'
+
+jobs:
+  helm-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          role-to-assume: ${{ secrets.IAM_ROLE_ARN }}
+          role-session-name: github-actions-session
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup Twingate
+        uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_SERVICE_KEY_SECRET_NAME }}
+
+      - name: Configure EKS kubeconfig
+        uses: aws-actions/eks-setup-kubectl@v1
+        with:
+          cluster-name: ${{ secrets.CLUSTER_NAME }}
+          region: ${{ secrets.AWS_REGION }}
+
+      - name: Create environment variable secret from JSON
+        env:
+          ENV_JSON: ${{ secrets.ENV_SECRET_JSON }}
+          SECRET_NAME: ${{ github.event.inputs.application }}-secret
+          NAMESPACE: ${{ github.event.inputs.namespace }}
+        run: |
+          echo "$ENV_JSON" > /tmp/env.json
+          # Convert JSON to --from-literal flags
+          LITERAL_ARGS=$(jq -r 'to_entries[] | "--from-literal=" + .key + "=" + .value' /tmp/env.json | xargs)
+          # Create secret with dynamic name
+          eval kubectl create secret generic "$SECRET_NAME" \
+            --namespace "$NAMESPACE" \
+            $LITERAL_ARGS \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create imagePullSecret for private registry
+        run: |
+          kubectl create secret docker-registry regcred \
+            --namespace ${{ github.event.inputs.namespace }} \
+            --docker-server=ghcr.io \
+            --docker-username=${{ github.actor }} \
+            --docker-password=${{ secrets.GHCR_TOKEN }} \
+            --docker-email=you@example.com \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy with Helm
+        uses: deliverybot/helm@v1
+        with:
+          helm: upgrade
+          chart: ./helm
+          name: ${{ github.event.inputs.application }}
+          namespace: ${{ github.event.inputs.namespace }}
+          create_namespace: true
+          wait: true
+          values: |
+            image:
+              repository: ${{ github.event.inputs.repository }}
+              tag: ${{ github.event.inputs.tag }}
+            imagePullSecrets:
+              - name: "regcred"
+            containerPort: ${{ github.event.inputs.containerPort }}
+            ingress:
+              hosts:
+                - host: ${{ github.event.inputs.domain }}
+                  paths:
+                    - path: /
+                      pathType: ImplementationSpecific
+              className: ${{ github.event.inputs.ingressClass }}
+            readinessProbe:
+              httpGet:
+                path: ${{ github.event.inputs.healthPath }}
+            livenessProbe:
+              httpGet:
+                path: ${{ github.event.inputs.healthPath }}
+            envSecret:
+              name: ${{ github.event.inputs.application }}-secret
