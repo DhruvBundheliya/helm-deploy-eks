@@ -1,2 +1,5 @@
-.idea/**
-.idea
+# Various IDEs
+.project
+.idea/
+*.tmproj
+.vscode/
