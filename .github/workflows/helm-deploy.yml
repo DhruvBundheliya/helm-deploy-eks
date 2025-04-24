@@ -99,7 +99,8 @@ jobs:
             --set image.repository=${{ github.event.inputs.repository }} \
             --set image.tag=${{ github.event.inputs.tag }} \
             --set imagePullSecrets[0].name=regcred \
-            --set containerPort=${{ github.event.inputs.containerPort }} \
+            --set container.port=${{ github.event.inputs.containerPort }} \
+            --set ingress.enabled=true \
             --set ingress.className=${{ github.event.inputs.ingressClass }} \
             --set ingress.hosts[0].host=${{ github.event.inputs.domain }} \
             --set ingress.hosts[0].paths[0].path=/ \
