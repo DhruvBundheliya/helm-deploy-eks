@@ -70,7 +70,7 @@ jobs:
           # Convert JSON to --from-literal flags
           LITERAL_ARGS=$(jq -r 'to_entries[] | "--from-literal=" + .key + "=" + .value' /tmp/env.json | xargs)
           # Create secret with dynamic name
-          kubectl create namespace ${{ github.event.inputs.namespace }}
+          kubectl create namespace ${{ github.event.inputs.namespace }} --dry-run=client -o yaml | kubectl apply -f -
           eval kubectl create secret generic "$SECRET_NAME" \
             --namespace "$NAMESPACE" \
             $LITERAL_ARGS \
@@ -107,4 +107,5 @@ jobs:
             --set readinessProbe.httpGet.path=${{ github.event.inputs.healthPath }} \
             --set livenessProbe.httpGet.path=${{ github.event.inputs.healthPath }} \
             --set envSecret.name=${{ github.event.inputs.application }}-secret \
-            --wait
+            --wait \
+            --debug
