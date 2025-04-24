@@ -37,7 +37,7 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: {{ .Values.container.portName | default "http" }}
+            - name: {{ .Values.container.portName | default "web" }}
               containerPort: {{ .Values.container.port }}
               protocol: {{ .Values.container.protocol | default "TCP" }}
           envFrom:

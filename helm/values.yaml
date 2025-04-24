@@ -45,7 +45,7 @@ service:
 
 container:
   port: 8080
-  portName: http
+  portName: web
   protocol: TCP
 
 ingress:
@@ -105,7 +105,7 @@ affinity: {}
 livenessProbe:
   httpGet:
     path: /
-    port: http
+    port: web
   initialDelaySeconds: 10
   periodSeconds: 10
   timeoutSeconds: 5
@@ -115,7 +115,7 @@ livenessProbe:
 readinessProbe:
   httpGet:
     path: /
-    port: http
+    port: web
   initialDelaySeconds: 5
   periodSeconds: 10
   timeoutSeconds: 5
