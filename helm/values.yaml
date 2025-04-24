@@ -43,6 +43,11 @@ service:
   type: ClusterIP
   port: 80
 
+container:
+  port: 8080
+  portName: http
+  protocol: TCP
+
 ingress:
   enabled: false
   className: ""

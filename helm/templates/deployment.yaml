@@ -37,16 +37,16 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - name: http
-              containerPort: {{ .Values.service.port }}
-              protocol: TCP
+            - name: {{ .Values.container.portName | default "http" }}
+              containerPort: {{ .Values.container.port }}
+              protocol: {{ .Values.container.protocol | default "TCP" }}
           envFrom:
             - secretRef:
-                name: { { .Values.envSecret.name } }
+                name: {{ .Values.envSecret.name }}
           livenessProbe:
-            { { - toYaml .Values.livenessProbe | nindent 12 } }
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
-            { { - toYaml .Values.readinessProbe | nindent 12 } }
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- with .Values.volumeMounts }}
