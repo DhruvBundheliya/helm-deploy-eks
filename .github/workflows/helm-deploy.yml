@@ -55,10 +55,10 @@ jobs:
           service-key: ${{ secrets.TWINGATE_SERVICE_KEY_SECRET_NAME }}
 
       - name: Configure EKS kubeconfig
-        uses: aws-actions/eks-setup-kubectl@v1
+        uses: silverlyra/setup-aws-eks@v0.1
         with:
-          cluster-name: ${{ secrets.CLUSTER_NAME }}
-          region: ${{ secrets.AWS_REGION }}
+          cluster: ${{ secrets.CLUSTER_NAME }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
       - name: Create environment variable secret from JSON
         env:
@@ -85,34 +85,25 @@ jobs:
             --docker-email=you@example.com \
             --dry-run=client -o yaml | kubectl apply -f -
 
-      - name: Deploy with Helm
-        uses: deliverybot/helm@v1
+      - name: Install Helm
+        uses: azure/setup-helm@v3
         with:
-          helm: upgrade
-          chart: ./helm
-          name: ${{ github.event.inputs.application }}
-          namespace: ${{ github.event.inputs.namespace }}
-          create_namespace: true
-          wait: true
-          values: |
-            image:
-              repository: ${{ github.event.inputs.repository }}
-              tag: ${{ github.event.inputs.tag }}
-            imagePullSecrets:
-              - name: "regcred"
-            containerPort: ${{ github.event.inputs.containerPort }}
-            ingress:
-              hosts:
-                - host: ${{ github.event.inputs.domain }}
-                  paths:
-                    - path: /
-                      pathType: ImplementationSpecific
-              className: ${{ github.event.inputs.ingressClass }}
-            readinessProbe:
-              httpGet:
-                path: ${{ github.event.inputs.healthPath }}
-            livenessProbe:
-              httpGet:
-                path: ${{ github.event.inputs.healthPath }}
-            envSecret:
-              name: ${{ github.event.inputs.application }}-secret
+          version: v3.14.0
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install ${{ github.event.inputs.application }} ./helm \
+            --namespace ${{ github.event.inputs.namespace }} \
+            --create-namespace \
+            --set image.repository=${{ github.event.inputs.repository }} \
+            --set image.tag=${{ github.event.inputs.tag }} \
+            --set imagePullSecrets[0].name=regcred \
+            --set containerPort=${{ github.event.inputs.containerPort }} \
+            --set ingress.className=${{ github.event.inputs.ingressClass }} \
+            --set ingress.hosts[0].host=${{ github.event.inputs.domain }} \
+            --set ingress.hosts[0].paths[0].path=/ \
+            --set ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
+            --set readinessProbe.httpGet.path=${{ github.event.inputs.healthPath }} \
+            --set livenessProbe.httpGet.path=${{ github.event.inputs.healthPath }} \
+            --set envSecret.name=${{ github.event.inputs.application }}-secret \
+            --wait
