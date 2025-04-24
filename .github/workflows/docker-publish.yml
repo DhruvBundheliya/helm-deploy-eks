@@ -31,7 +31,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+          tags: ghcr.io/dheuvbundheliya/helm-deploy-eks:${{ github.sha }}
 
       - name: Logout from GHCR
         run: docker logout ghcr.io
