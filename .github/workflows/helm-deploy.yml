@@ -92,21 +92,23 @@ jobs:
           version: v3.14.0
 
       - name: Deploy with Helm
-        run: |
-          helm upgrade --install ${{ github.event.inputs.application }} ./helm \
-            --namespace ${{ github.event.inputs.namespace }} \
-            --create-namespace \
-            --set image.repository=${{ github.event.inputs.repository }} \
-            --set image.tag=${{ github.event.inputs.tag }} \
-            --set imagePullSecrets[0].name=regcred \
-            --set container.port=${{ github.event.inputs.containerPort }} \
-            --set ingress.enabled=true \
-            --set ingress.className=${{ github.event.inputs.ingressClass }} \
-            --set ingress.hosts[0].host=${{ github.event.inputs.domain }} \
-            --set ingress.hosts[0].paths[0].path=/ \
-            --set ingress.hosts[0].paths[0].pathType=ImplementationSpecific \
-            --set readinessProbe.httpGet.path=${{ github.event.inputs.healthPath }} \
-            --set livenessProbe.httpGet.path=${{ github.event.inputs.healthPath }} \
-            --set envSecret.name=${{ github.event.inputs.application }}-secret \
-            --wait \
-            --debug
+        uses: DhruvBundheliya/helm-deploy@v1
+        with:
+          release: ${{ github.event.inputs.application }}
+          chart: ./helm
+          namespace: ${{ github.event.inputs.namespace }}
+          create_namespace: true
+          wait: true
+          values: |
+            image.repository: ${{ github.event.inputs.repository }}
+            image.tag: ${{ github.event.inputs.tag }}
+            imagePullSecrets[0].name: regcred
+            container.port: ${{ github.event.inputs.containerPort }}
+            ingress.enabled: true
+            ingress.className: ${{ github.event.inputs.ingressClass }}
+            ingress.hosts[0].host: ${{ github.event.inputs.domain }}
+            ingress.hosts[0].paths[0].path: /
+            ingress.hosts[0].paths[0].pathType: ImplementationSpecific
+            readinessProbe.httpGet.path: ${{ github.event.inputs.healthPath }}
+            livenessProbe.httpGet.path: ${{ github.event.inputs.healthPath }}
+            envSecret.name: ${{ github.event.inputs.application }}-secret
