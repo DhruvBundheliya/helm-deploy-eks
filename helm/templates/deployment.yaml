@@ -42,7 +42,7 @@ spec:
               protocol: {{ .Values.container.protocol | default "TCP" }}
           envFrom:
             - secretRef:
-                name: {{ .Values.envSecret.name }}
+                name: {{ .Values.envsecret.name }}
           livenessProbe:
             {{- toYaml .Values.livenessProbe | nindent 12 }}
           readinessProbe:
