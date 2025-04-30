@@ -63,7 +63,7 @@ jobs:
       - name: Create environment variable secret from JSON
         env:
           ENV_JSON: ${{ secrets.ENV_SECRET_JSON }}
-          SECRET_NAME: ${{ github.event.inputs.application }}-secret
+          SECRET_NAME: ${{ github.event.inputs.application }}
           NAMESPACE: ${{ github.event.inputs.namespace }}
         run: |
           echo "$ENV_JSON" > /tmp/env.json
@@ -92,23 +92,23 @@ jobs:
           version: v3.14.0
 
       - name: Deploy with Helm
-        uses: DhruvBundheliya/helm-deploy@v1.0.0
+        uses: DhruvBundheliya/helm-deploy@v1
         with:
           release: ${{ github.event.inputs.application }}
           chart: ./helm
           namespace: ${{ github.event.inputs.namespace }}
           create_namespace: true
           wait: true
-          values: |
-            image.repository: ${{ github.event.inputs.repository }}
-            image.tag: ${{ github.event.inputs.tag }}
-            imagePullSecrets[0].name: regcred
-            container.port: ${{ github.event.inputs.containerPort }}
-            ingress.enabled: true
-            ingress.className: ${{ github.event.inputs.ingressClass }}
-            ingress.hosts[0].host: ${{ github.event.inputs.domain }}
-            ingress.hosts[0].paths[0].path: /
-            ingress.hosts[0].paths[0].pathType: ImplementationSpecific
-            readinessProbe.httpGet.path: ${{ github.event.inputs.healthPath }}
-            livenessProbe.httpGet.path: ${{ github.event.inputs.healthPath }}
-            envSecret.name: ${{ github.event.inputs.application }}-secret
+          set: |
+            image.repository=${{ github.event.inputs.repository }}
+            image.tag=${{ github.event.inputs.tag }}
+            imagePullSecrets[0].name=regcred
+            container.port=${{ github.event.inputs.containerPort }}
+            ingress.enabled=true
+            ingress.className=${{ github.event.inputs.ingressClass }}
+            ingress.hosts[0].host=${{ github.event.inputs.domain }}
+            ingress.hosts[0].paths[0].path=/
+            ingress.hosts[0].paths[0].pathType=ImplementationSpecific
+            readinessProbe.httpGet.path=${{ github.event.inputs.healthPath }}
+            livenessProbe.httpGet.path=${{ github.event.inputs.healthPath }}
+            envsecret.name=${{ github.event.inputs.application }}
